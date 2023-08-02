@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "aws-sdk": "^2.1428.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.1",
+    "mongoose": "^7.4.1"
+  },
+  "name": "aws-cloud-storage",
+  "version": "1.0.0",
+  "description": "aws cloud object storage with node.js",
+  "main": "server.js",
+  "scripts": {
+    "start": "npx nodemon server.js",
+    "start:prod": "NODE_ENV=production npx nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "sehsyntes",
+  "license": "ISC"
+}
