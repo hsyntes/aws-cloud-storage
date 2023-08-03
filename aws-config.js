@@ -1,4 +1,4 @@
-const AWS = require("AWS");
+const AWS = require("aws-sdk");
 
 // * Configuration AWS
 AWS.config.update({
@@ -6,3 +6,5 @@ AWS.config.update({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   region: process.env.AWS_REGION,
 });
+
+module.exports = AWS;

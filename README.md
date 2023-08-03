@@ -11,13 +11,18 @@ The Node.js AWS Cloud Object Storage Integration repository provides a simple an
 Before you begin, make sure you have the following prerequisites:
 
 - Node.js
+- multer npm package
 - Aws Account with Cloud Object Storage (e.g, S3) access
 
 ## Installation
 
 To install the Node.js AWS Cloud Object Storage Integration package, run:
 
-`npm install aws-sdk`
+`npm install aws-sdk multer`
+
+Optional
+
+`npm install sharp`
 
 ## Usage
 
