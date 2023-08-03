@@ -11,14 +11,14 @@ const uniqueError = (err) => {
 
 // ! 403: Forbidden
 const validationError = (err) => {
-  const messages = err.messages.split(",");
+  const messages = err.message.split(",");
 
   const message = messages
     .map((message, index) => message.split(":").at(index === 0 ? 2 : 1))
     .join("")
     .trim();
 
-  return new ErrorProvider(403, "fail", err.message);
+  return new ErrorProvider(403, "fail", message);
 };
 
 const jsonWebTokenError = () =>
@@ -31,14 +31,17 @@ module.exports = async (err, req, res, next) => {
   if (process.env.NODE_ENV === "production") {
     if (err.code === 11000) err = uniqueError(err);
     if (err.name === "ValidationError") err = validationError(err);
-    if (err instanceof JsonWebTokenError) err = jsonWebTokenError();
+    if (err instanceof JsonWebTokenError) {
+      console.log(err);
+      err = jsonWebTokenError();
+    }
     if (err instanceof TokenExpiredError) err = tokenExpiredError();
   }
 
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
 
-  res.status(err.status).json({
+  res.status(err.statusCode).json({
     status: err.status,
     message: err.message,
   });

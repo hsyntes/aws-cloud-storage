@@ -9,11 +9,6 @@ exports.uploadPhoto = async (req, res, next) => {
     if (!req.file)
       next(new ErrorProvider(404, "fail", "Not found photo to upload."));
 
-    // * Creating a user
-    const user = await User.create({
-      username: req.body.username,
-    });
-
     // * Resizing user's photo
     const photo = await sharp(req.file.buffer)
       .resize({
@@ -29,10 +24,11 @@ exports.uploadPhoto = async (req, res, next) => {
     const params = {
       Bucket: process.env.AWS_Bucket,
       ACL: process.env.AWS_ACL,
-      Key: `users/${user.username}`,
+      Key: `users/${req.user.username}`,
       Body: photo,
     };
 
+    // * Call the S3 module from AWS
     const s3 = new AWS.S3();
     try {
       s3.upload(params, async (err, data) => {
@@ -43,8 +39,8 @@ exports.uploadPhoto = async (req, res, next) => {
 
         const url = data.Location;
 
-        user.photo = url;
-        await user.save({ validateBeforeSave: false });
+        req.user.photo = url;
+        await req.user.save({ validateBeforeSave: false });
 
         res.status(200).json({
           status: "success",
@@ -70,36 +66,33 @@ exports.deletePhoto = async (req, res, next) => {
         new ErrorProvider(403, "fail", "Please specify a user to delete photo.")
       );
 
-    const { username } = req.params;
-    const user = await User.findOne({ username });
-
-    if (!user) return next(new ErrorProvider(404, "fail", "User not found."));
-
     const params = {
       Bucket: process.env.AWS_Bucket,
-      Key: `users/${user.username}.png`,
+      Key: `users/${req.user.username}.png`,
     };
 
+    // * Call the S3 module from AWS
     const s3 = new AWS.S3();
-    try {
-      s3.deleteObject(params, async (err, data) => {
-        if (err)
-          return next(
-            new ErrorProvider(500, "fail", `Error deleting the photo: ${err}`)
-          );
+    // try {
+    //   s3.deleteObject(params, async (err, data) => {
+    //     if (err)
+    //       return next(
+    //         new ErrorProvider(500, "fail", `Error deleting the photo: ${err}`)
+    //       );
 
-        user.photo = undefined;
-        await user.save({ validateBeforeSave: false });
+    //     // * Removing the photo from the MongoDB
+    //     req.user.photo = undefined;
+    //     await req.user.save({ validateBeforeSave: false });
 
-        res.status(204).json({
-          status: "success",
-          message: "Profile photo has been deleted successfully.",
-          data: null,
-        });
-      });
-    } catch (e) {
-      next(e);
-    }
+    //     res.status(204).json({
+    //       status: "success",
+    //       message: "Profile photo has been deleted successfully.",
+    //       data: null,
+    //     });
+    //   });
+    // } catch (e) {
+    //   next(e);
+    // }
 
     // * Alternative: More efficient approach
     try {
@@ -121,8 +114,9 @@ exports.deletePhoto = async (req, res, next) => {
       next(e);
     }
 
-    user.photo = undefined;
-    await user.save({ validateBeforeSave: false });
+    // * Removing the photo from the MongoDB
+    req.user.photo = undefined;
+    await req.user.save({ validateBeforeSave: false });
 
     res.status(200).json({
       status: "success",
@@ -142,26 +136,19 @@ exports.getPhoto = async (req, res, next) => {
         new ErrorProvider(403, "fail", "Please specify a user to get photo.")
       );
 
-    const { username } = req.params;
-
-    const user = await User.findOne({ username });
-
-    if (!user)
-      return next(
-        new ErrorProvider(404, "fail", "Not found user to get photo.")
-      );
-
     const params = {
       Bucket: process.env.AWS_Bucket,
-      Key: `users/${user.username}.png`,
+      Key: `users/${req.user.username}.png`,
     };
 
+    // * Call the S3 module from AWS
     const s3 = new AWS.S3();
     try {
       s3.getObject(params, (err, data) => {
         if (err)
           return next(new ErrorProvider(404, "fail", `Not found photo.`));
 
+        // * Getting photo URL Object
         const photo = data.Body.toString();
 
         res.status(200).json({

@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
       minlength: [3, "@username cannot be shorter than 3 characters."],
       maxlength: [12, "@username connot be longer than 12 characters."],
       trim: true,
+      unique: true,
     },
 
     photo: String,
@@ -15,6 +16,7 @@ const userSchema = new mongoose.Schema(
   { versionKey: false }
 );
 
+// * Virtual populating
 userSchema.virtual("posts", {
   ref: "Post",
   foreignField: "postedBy",
