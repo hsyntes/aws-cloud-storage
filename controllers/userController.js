@@ -53,6 +53,13 @@ exports.uploadPhoto = async (req, res, next) => {
     } catch (e) {
       next(e);
     }
+
+    // * Alternative
+    try {
+      await s3.upload(params).promise();
+    } catch (e) {
+      next(e);
+    }
   } catch (e) {
     next(e);
   }
