@@ -23,7 +23,6 @@ exports.uploadPhoto = async (req, res, next) => {
     // * AWS Parameters
     const params = {
       Bucket: process.env.AWS_Bucket,
-      ACL: process.env.AWS_ACL,
       Key: `users/${req.user.username}`,
       Body: photo,
     };
@@ -66,7 +65,7 @@ exports.uploadPhoto = async (req, res, next) => {
 };
 
 // * Deleting the photo
-exports.deletePhoto = async (req, res, next) => {
+exports.removePhoto = async (req, res, next) => {
   try {
     if (!req.params.username)
       return next(
@@ -80,26 +79,26 @@ exports.deletePhoto = async (req, res, next) => {
 
     // * Call the S3 module from AWS
     const s3 = new AWS.S3();
-    // try {
-    //   s3.deleteObject(params, async (err, data) => {
-    //     if (err)
-    //       return next(
-    //         new ErrorProvider(500, "fail", `Error deleting the photo: ${err}`)
-    //       );
+    try {
+      s3.deleteObject(params, async (err, data) => {
+        if (err)
+          return next(
+            new ErrorProvider(500, "fail", `Error deleting the photo: ${err}`)
+          );
 
-    //     // * Removing the photo from the MongoDB
-    //     req.user.photo = undefined;
-    //     await req.user.save({ validateBeforeSave: false });
+        // * Removing the photo from the MongoDB
+        req.user.photo = undefined;
+        await req.user.save({ validateBeforeSave: false });
 
-    //     res.status(204).json({
-    //       status: "success",
-    //       message: "Profile photo has been deleted successfully.",
-    //       data: null,
-    //     });
-    //   });
-    // } catch (e) {
-    //   next(e);
-    // }
+        res.status(204).json({
+          status: "success",
+          message: "Profile photo has been deleted successfully.",
+          data: null,
+        });
+      });
+    } catch (e) {
+      next(e);
+    }
 
     // * Alternative: More efficient approach
     try {
@@ -168,6 +167,58 @@ exports.getPhoto = async (req, res, next) => {
     } catch (e) {
       next(e);
     }
+  } catch (e) {
+    next(e);
+  }
+};
+
+// * Deleting multiple files
+exports.closeAccount = async (req, res, next) => {
+  try {
+    const user = await User.findByIdAndDelete(req.user._id);
+
+    const params = {
+      Bucket: process.env.AWS_BUCKET,
+      Key: `users/${user.username}.png`,
+    };
+
+    s3.deleteObject(params, (err) => {
+      if (err)
+        return next(
+          new ErrorProvider(422, "fail", "Error deleting your profile picture.")
+        );
+    });
+
+    await Post.deleteMany({ postedBy: user._id });
+
+    const folderParams = {
+      Bucket: process.env.AWS_BUCKET,
+      Prefix: `posts/${user.username}`,
+    };
+
+    const objects = await s3.listObjectsV2(folderParams).promise();
+
+    if (objects?.Contents.length !== 0) {
+      const deleteParams = {
+        Bucket: process.env.AWS_BUCKET,
+        Delete: {
+          Objects: objects.Contents.map((object) => ({ Key: object.Key })),
+        },
+      };
+
+      s3.deleteObjects(deleteParams, (err) => {
+        if (err)
+          return next(
+            new ErrorProvider(403, "fail", "Couldn't delete user's posts.")
+          );
+      });
+    }
+
+    res.status(204).json({
+      status: "success",
+      message: "Your accunt has been deleted successfully.",
+      data: null,
+    });
   } catch (e) {
     next(e);
   }

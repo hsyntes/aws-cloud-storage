@@ -48,9 +48,9 @@ const s3 = new AWS.S3();
 
 ```javascript
 const params = {
-  Bucket: "your-bucket-name",
-  Key: "file-name.jpg",
-  Body: "File content",
+  Bucket: "your-bucket-name", // Folder name in AWS
+  Key: "file-name.jpg", // Path
+  Body: "File content", // File
 };
 
 s3.upload(params, (err, data) => {
@@ -70,7 +70,6 @@ const { files } = req;
 for (const file of files) {
   const params = {
     Bucket: process.env.AWS_Bucket,
-    ACL: process.env.AWS_ACL,
     Key: `users/${req.user.username}/${file.originalname}`,
     Body: file.buffer,
   };
@@ -119,6 +118,33 @@ s3.deleteObject(params, (err, data) => {
     console.log("Deletion successful");
   }
 });
+```
+
+To delete multiple files
+
+```javascript
+const params = {
+  Bucket: process.env.AWS_BUCKET,
+  Prefix: `posts/${user.username}`,
+};
+
+const objects = await s3.listObjectsV2(params).promise();
+
+if (objects?.Contents.length !== 0) {
+  const deleteParams = {
+    Bucket: process.env.AWS_BUCKET,
+    Delete: {
+      Objects: objects.Contents.map((object) => ({ Key: object.Key })),
+    },
+  };
+
+  s3.deleteObjects(deleteParams, (err) => {
+    if (err)
+      return next(
+        new ErrorProvider(403, "fail", "Couldn't delete user's posts.")
+      );
+  });
+}
 ```
 
 ## Security Considerations
