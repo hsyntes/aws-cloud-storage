@@ -3,7 +3,7 @@ const multer = require("multer");
 
 const {
   uploadPhoto,
-  deletePhoto,
+  removePhoto,
   getPhoto,
 } = require("../controllers/userController");
 
@@ -20,6 +20,7 @@ router.use(verifyToken);
 
 router.get("/", getPhoto);
 router.post("/upload", storage.single("photo"), uploadPhoto);
-router.delete("/delete/:username", deletePhoto);
+router.delete("/delete/:username", removePhoto);
+router.delete("/delete");
 
 module.exports = router;
