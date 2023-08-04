@@ -13,12 +13,28 @@ exports.uploadPost = async (req, res, next) => {
 
     for (const file of files) {
       const params = {
-        Bucket: process.env.AWS_BUCKET,
+        Bucket: process.env.AWS_Bucket,
         ACL: process.env.AWS_ACL,
-        Key: `posts/`,
+        Key: `users/${req.user.username}/${file.originalname}`,
+        Body: file.buffer,
       };
+
+      try {
+        const data = await s3.upload(params).promise();
+
+        const url = data.Location;
+
+        const post = await Post.create({
+          postedBy: req.user._id,
+        });
+      } catch (err) {
+        console.error("Error uploading:", err);
+        // Handle error as needed
+      }
     }
-  } catch (e) {}
+  } catch (e) {
+    next(e);
+  }
 };
 
 // * Getting a post

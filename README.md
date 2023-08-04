@@ -62,6 +62,27 @@ s3.upload(params, (err, data) => {
 });
 ```
 
+### Uploading Multiple Files
+
+```javascript
+const { files } = req;
+
+for (const file of files) {
+  const params = {
+    Bucket: process.env.AWS_Bucket,
+    ACL: process.env.AWS_ACL,
+    Key: `users/${req.user.username}/${file.originalname}`,
+    Body: file.buffer,
+  };
+
+  try {
+    const data = await s3.upload(params).promise();
+  } catch (err) {
+    console.error("Error uploading:", err);
+  }
+}
+```
+
 ### Downloading Files
 
 Downloading files from AWS Cloud Object Storage is equally straightforward:
